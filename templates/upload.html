@@ -5,10 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Your Car</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #1f1f1f;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+        }
+        .cropper-container {
+            max-width: 100%;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body class="dark-theme">
     <header>
-        <h1>Upload Your Car</h1>
+        <h1>Aash Auto Works Pvt Ltd</h1>
+        <p class="certified-text">Certified Used Car Seller</p>
         <nav>
             <a href="/">Home</a>
             <a href="/services">Our Services</a>
@@ -17,7 +57,7 @@
     </header>
 
     <main class="upload-form-container">
-        <form method="post" enctype="multipart/form-data" class="upload-form">
+        <form id="upload-form" method="post" enctype="multipart/form-data" class="upload-form">
             <label for="make">Make:</label>
             <input type="text" id="make" name="make" required>
 
@@ -40,8 +80,121 @@
         </form>
     </main>
 
+    <div id="cropModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div class="cropper-container">
+                <img id="imageToCrop" src="" alt="Image to Crop">
+            </div>
+            <button id="cropAndSave">Crop and Save</button>
+        </div>
+    </div>
+
     <footer>
-        <p>&copy; 2024 Used Car Dealership</p>
+        <p>&copy; 2024 Aash Auto Works Pvt Ltd</p>
     </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadForm = document.getElementById('upload-form');
+            const photosInput = document.getElementById('photos');
+            const cropModal = document.getElementById('cropModal');
+            const closeButton = document.querySelector('.close-button');
+            const imageToCrop = document.getElementById('imageToCrop');
+            const cropAndSaveButton = document.getElementById('cropAndSave');
+            
+            let cropper;
+            let filesToUpload = [];
+
+            photosInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    filesToUpload = Array.from(files);
+                    processNextFile();
+                }
+            });
+
+            function processNextFile() {
+                if (filesToUpload.length > 0) {
+                    const file = filesToUpload.shift();
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        imageToCrop.src = event.target.result;
+                        cropModal.style.display = "block";
+                        if (cropper) {
+                            cropper.destroy();
+                        }
+                        cropper = new Cropper(imageToCrop, {
+                            aspectRatio: 16 / 9,
+                            viewMode: 1,
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // All files are processed, now submit the form
+                    submitFormWithCroppedImages();
+                }
+            }
+            
+            closeButton.addEventListener('click', () => {
+                cropModal.style.display = "none";
+                if (cropper) {
+                    cropper.destroy();
+                }
+                // If a user closes the modal, we stop processing the files
+                filesToUpload = [];
+                // Clear the file input to avoid re-uploading on form submit
+                photosInput.value = ''; 
+            });
+
+            cropAndSaveButton.addEventListener('click', () => {
+                const croppedCanvas = cropper.getCroppedCanvas();
+                croppedCanvas.toBlob((blob) => {
+                    // Create a new file object from the blob
+                    const croppedFile = new File([blob], `cropped-${Date.now()}.jpeg`, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    // Append the new file to the form data
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(croppedFile);
+                    photosInput.files = dataTransfer.files;
+
+                    cropModal.style.display = "none";
+                    processNextFile();
+                }, 'image/jpeg');
+            });
+
+            function submitFormWithCroppedImages() {
+                const form = new FormData(uploadForm);
+                fetch(uploadForm.action, {
+                    method: 'POST',
+                    body: form
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was an error uploading the images.');
+                });
+            }
+
+            uploadForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                // We handle submission manually after all files are cropped
+                // and added to the file input.
+                if (photosInput.files.length > 0) {
+                    submitFormWithCroppedImages();
+                } else {
+                    alert('Please select a car photo.');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
