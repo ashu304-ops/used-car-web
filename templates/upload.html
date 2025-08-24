@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Your Car</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+    <header>
+        <h1>Upload Your Car</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/services">Our Services</a>
+            <a href="/upload">Upload Car</a>
+        </nav>
+    </header>
+
+    <main class="upload-form-container">
+        <form method="post" enctype="multipart/form-data" class="upload-form">
+            <label for="make">Make:</label>
+            <input type="text" id="make" name="make" required>
+
+            <label for="model">Model:</label>
+            <input type="text" id="model" name="model" required>
+
+            <label for="year">Year:</label>
+            <input type="number" id="year" name="year" required>
+
+            <label for="price">Price:</label>
+            <input type="text" id="price" name="price" required>
+
+            <label for="details">Details:</label>
+            <textarea id="details" name="details" rows="4" required></textarea>
+
+            <label for="photos">Car Photos (up to 10):</label>
+            <input type="file" id="photos" name="photos" multiple required accept=".jpg, .jpeg, .png, .gif">
+
+            <button type="submit">Upload Car</button>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Used Car Dealership</p>
+    </footer>
+</body>
+</html>
