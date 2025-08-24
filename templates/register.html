@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Registration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+    <header>
+        <h1>Client Registration</h1>
+        <p class="certified-text">Create a New Account</p>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/services">Our Services</a>
+            <a href="/login">Login</a>
+        </nav>
+    </header>
+
+    <main class="upload-form-container">
+        <form method="post" class="upload-form">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" value="ashu123" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" value="ashu123" required>
+
+            <button type="submit">Register</button>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Aash Auto Works Pvt Ltd</p>
+    </footer>
+</body>
+</html>
