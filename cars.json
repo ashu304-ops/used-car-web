@@ -3,22 +3,11 @@
         "id": 1,
         "make": "Toyoto ",
         "model": "2022",
-        "year": 2022,
-        "price": "245000",
-        "details": "sdusfg",
+        "year": 2034,
+        "price": "2350000",
+        "details": "dwdbjwdjb",
         "photos": [
-            "static/uploads/c27dac38-2f03-4bbf-a41b-740097b3ccc3-cropped-1756028522342.jpeg"
-        ]
-    },
-    {
-        "id": 2,
-        "make": "Toyoto ",
-        "model": "234",
-        "year": 24,
-        "price": "2334",
-        "details": "sdljslj",
-        "photos": [
-            "static/uploads/6f2cc84e-1fc4-497b-a8c3-0efef366074f-cropped-1756029390989.jpeg"
+            "static/uploads/d186a4e5-a1eb-49ea-abf6-994c540c05e3-cropped-1756182388513.jpeg"
         ]
     }
 ]
