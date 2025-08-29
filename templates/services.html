@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Services - Car Mechanic</title>
+    <title>Our Services - Aash Auto Works Pvt Ltd</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="dark-theme">
     <header>
-        <h1>Car Mechanic Services</h1>
+        <a href="{{ url_for('index') }}" class="logo-link">
+            <img src="{{ url_for('static', filename='images/carlogo.jpg') }}" alt="Aash Auto Works Logo" class="logo">
+        </a>
+        <h1>Aash Auto Works Pvt Ltd</h1>
+        <p class="certified-text">Certified Used Car Seller</p>
         <nav>
             <a href="/">Home</a>
             <a href="/services">Our Services</a>
@@ -27,11 +31,73 @@
             <li>Battery replacement</li>
             <li>Full vehicle inspection</li>
         </ul>
-        <p>Contact us for a free quote!</p>
+        <div class="contact-section">
+            <div class="contact-info">
+                <p>Contact us for a free quote!</p>
+                <p><strong>Call us at:</strong> 8097177143</p>
+            </div>
+            <form id="contact-form" class="auth-form">
+                <h2>Contact Us</h2>
+                <div id="status-message" class="status-message"></div>
+                {{ form.csrf_token }}
+                <div class="form-group">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control") }}
+                </div>
+                <div class="form-group">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-control") }}
+                </div>
+                <div class="form-group">
+                    {{ form.message.label(class="form-label") }}
+                    {{ form.message(class="form-control", rows="5") }}
+                </div>
+                <button type="submit" class="form-button">Send Message</button>
+            </form>
+        </div>
     </main>
 
     <footer>
-        <p>&copy; 2010 Used Car Dealership</p>
+        <p>&copy; 2024 Aash Auto Works Pvt Ltd</p>
     </footer>
+
+    <script>
+        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const form = e.target;
+            const statusMessage = document.getElementById('status-message');
+            
+            statusMessage.style.display = 'block';
+            statusMessage.style.backgroundColor = 'var(--accent-color)';
+            statusMessage.style.color = 'var(--text-color)';
+            statusMessage.textContent = 'Sending message...';
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    statusMessage.style.backgroundColor = 'var(--success-color)';
+                    statusMessage.textContent = result.message;
+                    form.reset();
+                } else {
+                    statusMessage.style.backgroundColor = 'var(--error-color)';
+                    statusMessage.textContent = result.message || 'An error occurred. Please try again.';
+                }
+            } catch (error) {
+                statusMessage.style.backgroundColor = 'var(--error-color)';
+                statusMessage.textContent = 'Network error. Please try again later.';
+            }
+
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        });
+    </script>
 </body>
 </html>
