@@ -27,6 +27,7 @@
             width: 80%;
             max-width: 700px;
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+            border-radius: 10px;
         }
         .cropper-container {
             max-width: 100%;
@@ -43,6 +44,64 @@
             text-decoration: none;
             cursor: pointer;
         }
+        .preview-container {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+        .preview-card {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            text-align: center;
+            padding-bottom: 1rem;
+        }
+        .preview-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        .preview-card h3 {
+            color: #bb86fc;
+            margin: 0.5rem 0;
+        }
+        .preview-card p {
+            margin: 0.2rem 0;
+            font-size: 0.9rem;
+        }
+        .photo-preview-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        .photo-preview-item {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #555;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        .photo-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .photo-preview-item::after {
+            content: '✓';
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            color: #00ff00;
+            font-size: 1.2rem;
+            display: none;
+        }
+        .photo-preview-item.cropped::after {
+            display: block;
+        }
     </style>
 </head>
 <body class="dark-theme">
@@ -52,32 +111,48 @@
         <nav>
             <a href="/">Home</a>
             <a href="/services">Our Services</a>
-            <a href="/upload">Upload Car</a>
+            <a href="/logout">Logout</a>
         </nav>
     </header>
 
     <main class="upload-form-container">
+        <h2>Upload a New Car Listing</h2>
         <form id="upload-form" method="post" enctype="multipart/form-data" class="upload-form">
-            <label for="make">Make:</label>
-            <input type="text" id="make" name="make" required>
+            {{ form.csrf_token }}
+            {{ form.make.label }}
+            {{ form.make(class="form-control", placeholder="Make") }}
 
-            <label for="model">Model:</label>
-            <input type="text" id="model" name="model" required>
+            {{ form.model.label }}
+            {{ form.model(class="form-control", placeholder="Model") }}
 
-            <label for="year">Year:</label>
-            <input type="number" id="year" name="year" required>
+            {{ form.year.label }}
+            {{ form.year(class="form-control", placeholder="Year") }}
 
-            <label for="price">Price:</label>
-            <input type="text" id="price" name="price" required>
+            {{ form.price.label }}
+            {{ form.price(class="form-control", placeholder="Price") }}
 
-            <label for="details">Details:</label>
-            <textarea id="details" name="details" rows="4" required></textarea>
+            {{ form.details.label }}
+            {{ form.details(class="form-control", placeholder="Details", rows="4") }}
 
-            <label for="photos">Car Photos (up to 10):</label>
-            <input type="file" id="photos" name="photos" multiple required accept=".jpg, .jpeg, .png, .gif">
+            {{ form.photos.label }}
+            {{ form.photos(class="form-control", accept=".jpg, .jpeg, .png, .gif", multiple=True) }}
 
-            <button type="submit">Upload Car</button>
+            <div id="photo-preview-grid" class="photo-preview-grid"></div>
+
+            {{ form.submit(class="form-button") }}
         </form>
+        <div id="status-message" style="display: none; text-align: center; margin-top: 20px;"></div>
+
+        <div id="car-preview" class="preview-container">
+            <div class="preview-card">
+                <img id="preview-image" src="https://placehold.co/600x400/333/fff?text=Car+Image" alt="Car Preview">
+                <div class="car-info">
+                    <h3 id="preview-title">Car Model (Year)</h3>
+                    <p><strong>Price:</strong> <span id="preview-price">₹0</span></p>
+                    <p id="preview-details">Car details will appear here...</p>
+                </div>
+            </div>
+        </div>
     </main>
 
     <div id="cropModal" class="modal">
@@ -103,21 +178,30 @@
             const closeButton = document.querySelector('.close-button');
             const imageToCrop = document.getElementById('imageToCrop');
             const cropAndSaveButton = document.getElementById('cropAndSave');
-            
+            const statusMessage = document.getElementById('status-message');
+            const photoPreviewGrid = document.getElementById('photo-preview-grid');
+            const formInputs = document.querySelectorAll('.upload-form input, .upload-form textarea');
+            const previewImage = document.getElementById('preview-image');
+            const previewTitle = document.getElementById('preview-title');
+            const previewPrice = document.getElementById('preview-price');
+            const previewDetails = document.getElementById('preview-details');
+
             let cropper;
-            let filesToUpload = [];
+            let filesToProcess = [];
+            let processedFiles = [];
+            let currentFileIndex = 0;
 
             photosInput.addEventListener('change', (e) => {
-                const files = e.target.files;
-                if (files.length > 0) {
-                    filesToUpload = Array.from(files);
-                    processNextFile();
-                }
+                filesToProcess = Array.from(e.target.files);
+                processedFiles = [];
+                photoPreviewGrid.innerHTML = '';
+                currentFileIndex = 0;
+                processNextFile();
             });
 
             function processNextFile() {
-                if (filesToUpload.length > 0) {
-                    const file = filesToUpload.shift();
+                if (currentFileIndex < filesToProcess.length) {
+                    const file = filesToProcess[currentFileIndex];
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         imageToCrop.src = event.target.result;
@@ -131,68 +215,122 @@
                         });
                     };
                     reader.readAsDataURL(file);
-                } else {
-                    // All files are processed, now submit the form
-                    submitFormWithCroppedImages();
                 }
             }
-            
+
             closeButton.addEventListener('click', () => {
                 cropModal.style.display = "none";
                 if (cropper) {
                     cropper.destroy();
                 }
-                // If a user closes the modal, we stop processing the files
-                filesToUpload = [];
-                // Clear the file input to avoid re-uploading on form submit
-                photosInput.value = ''; 
             });
 
             cropAndSaveButton.addEventListener('click', () => {
                 const croppedCanvas = cropper.getCroppedCanvas();
+                
                 croppedCanvas.toBlob((blob) => {
-                    // Create a new file object from the blob
-                    const croppedFile = new File([blob], `cropped-${Date.now()}.jpeg`, {
+                    const originalFile = filesToProcess[currentFileIndex];
+                    const croppedFile = new File([blob], `cropped-${originalFile.name}`, {
                         type: 'image/jpeg',
                         lastModified: Date.now()
                     });
                     
-                    // Append the new file to the form data
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(croppedFile);
-                    photosInput.files = dataTransfer.files;
+                    processedFiles.push(croppedFile);
+                    updatePreviewGrid(croppedFile);
 
                     cropModal.style.display = "none";
+                    currentFileIndex++;
+                    updateLivePreview();
                     processNextFile();
-                }, 'image/jpeg');
+                }, 'image/jpeg', 0.8);
             });
 
-            function submitFormWithCroppedImages() {
-                const form = new FormData(uploadForm);
-                fetch(uploadForm.action, {
-                    method: 'POST',
-                    body: form
-                })
-                .then(response => {
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('There was an error uploading the images.');
-                });
+            function updatePreviewGrid(file) {
+                const item = document.createElement('div');
+                item.className = 'photo-preview-item cropped';
+                const img = document.createElement('img');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                item.appendChild(img);
+                photoPreviewGrid.appendChild(item);
+            }
+
+            function updateLivePreview() {
+                const make = document.getElementById('make').value || 'Make';
+                const model = document.getElementById('model').value || 'Model';
+                const year = document.getElementById('year').value || 'Year';
+                const price = document.getElementById('price').value || '₹0';
+                const details = document.getElementById('details').value || 'Car details will appear here...';
+
+                previewTitle.textContent = `${make} ${model} (${year})`;
+                previewPrice.textContent = price;
+                previewDetails.textContent = details;
+
+                if (processedFiles.length > 0) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewImage.src = e.target.result;
+                    };
+                    reader.readAsDataURL(processedFiles[0]);
+                }
+            }
+
+            formInputs.forEach(input => {
+                input.addEventListener('input', updateLivePreview);
+            });
+
+            function showStatus(message, color) {
+                statusMessage.textContent = message;
+                statusMessage.style.color = color;
+                statusMessage.style.display = "block";
             }
 
             uploadForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                // We handle submission manually after all files are cropped
-                // and added to the file input.
-                if (photosInput.files.length > 0) {
-                    submitFormWithCroppedImages();
-                } else {
-                    alert('Please select a car photo.');
+                showStatus('Uploading...', 'yellow');
+
+                const form = new FormData();
+                form.append('csrf_token', uploadForm.querySelector('[name="csrf_token"]').value);
+                form.append('make', document.getElementById('make').value);
+                form.append('model', document.getElementById('model').value);
+                form.append('year', document.getElementById('year').value);
+                form.append('price', document.getElementById('price').value);
+                form.append('details', document.getElementById('details').value);
+                
+                if (processedFiles.length === 0) {
+                    showStatus('Please select and crop at least one photo.', 'red');
+                    return;
                 }
+                
+                processedFiles.forEach(file => {
+                    form.append('photos', file);
+                });
+
+                fetch(uploadForm.action, {
+                    method: 'POST',
+                    body: form
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Car uploaded successfully!', 'green');
+                        uploadForm.reset();
+                        processedFiles = [];
+                        photoPreviewGrid.innerHTML = '';
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 2000);
+                    } else {
+                        showStatus(data.message, 'red');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showStatus('There was an error uploading the images.', 'red');
+                });
             });
         });
     </script>

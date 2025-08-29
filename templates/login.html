@@ -19,13 +19,14 @@
 
     <main class="upload-form-container">
         <form method="post" class="upload-form">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
+            {{ form.csrf_token }}
+            {{ form.username.label }}
+            {{ form.username(class="form-control", placeholder="Username") }}
 
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
+            {{ form.password.label }}
+            {{ form.password(class="form-control", placeholder="Password") }}
 
-            <button type="submit">Log In</button>
+            {{ form.submit(class="form-button") }}
         </form>
     </main>
 
